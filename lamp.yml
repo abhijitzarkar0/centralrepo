@@ -51,12 +51,12 @@
 
     - name: Copy php page
       template:
-        src: "/lamstack/info.php"
+        src: "/lampstack/info.php"
         dest: "/var/www/html/info.php"
 
     - name: Set up virtuahHost
       template:
-        src: "/lamstack/apache.conf"
+        src: "/lampstack/apache.conf"
         dest: "/etc/apache2/sites-available/{{ http_conf }}"
       notify: restart-apache
 
