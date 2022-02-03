@@ -1,0 +1,70 @@
+---
+- hosts: servers
+  become: true
+  vars:
+          http_host: "test.com"
+          http_conf: "test.conf"
+          http_port: "80"
+          mysql_root_password: "temp123"
+         
+  tasks:
+    - name: Install Apache and PHP
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: [ 'apache2', 'php', 'php-mysql', 'libapache2-mod-php' ]
+
+    - name: Install mariadb Packages
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: [ 'mariadb-server', 'python3-pymysql' ]
+
+    - name: Start mariadb service
+      service:
+        name: mariadb
+        state: started
+      become: true
+
+    - name: Sets the root password
+      mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Copy .my.cnf for easier mysql automation
+      blockinfile:
+        path: ~/.my.cnf
+        create: yes
+        block: |
+          [client]
+          user=root
+          password= "{{ mysql_root_password }}"
+
+    - name: 3. Create a new database
+      mysql_db: name=test state=present collation=utf8_general_ci
+
+    - name: 4. Create a database user
+      mysql_user: name=test password=temp priv=*.*:ALL host=localhost state=present
+
+    - name: Create document root for your domain
+      file:
+        path: "/var/www/html/"
+        state: directory
+        mode: '0755'
+
+    - name: Copy php page
+      template:
+        src: "/lamstack/info.php"
+        dest: "/var/www/html/info.php"
+
+    - name: Set up virtuahHost
+      template:
+        src: "/lamstack/apache.conf"
+        dest: "/etc/apache2/sites-available/{{ http_conf }}"
+      notify: restart-apache
+
+    - name: Enable new site
+      shell: /usr/sbin/a2ensite {{ http_conf }}
+
+  handlers:
+    - name: restart-apache
+      service:
+        name: apache2
+        state: restarted
