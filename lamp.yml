@@ -1,5 +1,5 @@
 ---
-- hosts: servers
+- hosts: clients
   become: true
   vars:
           http_host: "test.com"

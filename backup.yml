@@ -1,0 +1,14 @@
+---
+- hosts: clients
+  become: true
+         
+  tasks:
+    - name: copy the backup script into node systems
+      copy: src=/home/ubuntu/backupscript.sh dest=/root/
+    - name: create a cron in node systems
+      cron:
+        name: "Backup Cron"
+        minute: 15
+        hour: 00
+        job: "/usr/bin/sh /root/backupscript.sh 2>&1"
+
